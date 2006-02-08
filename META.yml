@@ -1,0 +1,19 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Weather-NWS
+version:      0.01
+version_from: lib/Weather/NWS/NDFDgen.pm
+installdirs:  site
+requires:
+    Class::Std:                    0
+    Readonly:                      0
+    SOAP::DateTime:                0
+    SOAP::Lite:                    0
+    strict:                        0
+    Test::More:                    0
+    Test::Pod:                     1.14
+    Test::Pod::Coverage:           1.04
+    warnings:                      0
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.17
