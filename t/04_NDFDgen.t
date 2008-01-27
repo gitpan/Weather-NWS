@@ -107,4 +107,4 @@ eval {
   });
 };
 
-ok(not($@), 'Fetch Data');
+ok(not($@), "Fetch Data: $@");

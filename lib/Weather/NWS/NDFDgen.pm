@@ -3,7 +3,7 @@ package Weather::NWS::NDFDgen;
 use warnings;
 use strict;
 
-use SOAP::Lite;
+use LWP::Simple;
 use SOAP::DateTime;
 
 use Readonly;
@@ -18,11 +18,11 @@ Weather::NWS::NDFDgen - Object interface to the NWS NDFDgen Web Service.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =pod
 
@@ -232,8 +232,8 @@ indicated hour.
 =cut
 
 Readonly my $SERVICE =>
-    'http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl';
-    
+  'http://www.weather.gov/forecasts/xml/DWMLgen/wsdl/ndfdXML.wsdl';
+
 Readonly my %NAME_TO_ARGUMENT => (
     'Latitude'           => 'latitude',
     'Longitude'          => 'longitude',
@@ -245,32 +245,32 @@ Readonly my %NAME_TO_ARGUMENT => (
 Readonly my @ARGUMENTS => keys %NAME_TO_ARGUMENT;
 
 Readonly my %NAME_TO_PRODUCT => (
-  'Time-Series' => 'time-series',
-  'Glance'      => 'glance',
+    'Time-Series' => 'time-series',
+    'Glance'      => 'glance',
 );
 Readonly my @PRODUCTS => keys %NAME_TO_PRODUCT;
 
 Readonly my %NAME_TO_WEATHER_PARAMETER => (
-  'Maximum Temperature'                  => 'maxt',
-  'Minimum Temperature'                  => 'mint',
-  '3 Hourly Temperature'                 => 'temp',
-  'Dewpoint Temperature'                 => 'dew',
-  'Apparent Temperature'                 => 'appt',
-  '12 Hour Probability of Precipitation' => 'pop12',
-  'Liquid Precipitation Amount'          => 'qpf',
-  'Cloud Cover Amount'                   => 'sky',
-  'Snowfall Amount'                      => 'snow',
-  'Wind Speed'                           => 'wspd',
-  'Wind Direction'                       => 'wdir',
-  'Weather'                              => 'wx',
-  'Wave Height'                          => 'waveh',
-  'Weather Icons'                        => 'icons',
-  'Relative Humidity'                    => 'rh',
+    'Maximum Temperature'                  => 'maxt',
+    'Minimum Temperature'                  => 'mint',
+    '3 Hourly Temperature'                 => 'temp',
+    'Dewpoint Temperature'                 => 'dew',
+    'Apparent Temperature'                 => 'appt',
+    '12 Hour Probability of Precipitation' => 'pop12',
+    'Liquid Precipitation Amount'          => 'qpf',
+    'Cloud Cover Amount'                   => 'sky',
+    'Snowfall Amount'                      => 'snow',
+    'Wind Speed'                           => 'wspd',
+    'Wind Direction'                       => 'wdir',
+    'Weather'                              => 'wx',
+    'Wave Height'                          => 'waveh',
+    'Weather Icons'                        => 'icons',
+    'Relative Humidity'                    => 'rh',
 );
 Readonly my @WEATHER_PARAMETERS => keys %NAME_TO_WEATHER_PARAMETER;
 
 Readonly my $DEFAULT_PRODUCT    => 'Time-Series';
-Readonly my $DEFAULT_START_TIME => ConvertDate(scalar localtime);
+Readonly my $DEFAULT_START_TIME => ConvertDate( scalar localtime );
 
 =pod
 
@@ -279,14 +279,14 @@ Readonly my $DEFAULT_START_TIME => ConvertDate(scalar localtime);
 =cut
 
 {
-  my %forecaster            : ATTR;
-  my %forecast_xml          : ATTR;
-  my %default_latitude      : ATTR;
-  my %default_longitude     : ATTR;
-  my %default_product       : ATTR;
-  my %default_start_time    : ATTR;
-  my %default_end_time      : ATTR;
-  my %default_weather_parms : ATTR;
+    my %forecaster : ATTR;
+    my %forecast_xml : ATTR;
+    my %default_latitude : ATTR;
+    my %default_longitude : ATTR;
+    my %default_product : ATTR;
+    my %default_start_time : ATTR;
+    my %default_end_time : ATTR;
+    my %default_weather_parms : ATTR;
 
 =pod
 
@@ -300,26 +300,23 @@ Values can be provided for 'Latitude', 'Longitude', 'Product', 'Start Time',
 
 =cut
 
-  sub BUILD {
-    my ($self, $ident, $arg_ref) = @_;
+    sub BUILD {
+        my ( $self, $ident, $arg_ref ) = @_;
 
-    my %args = %{$arg_ref};
+        my %args = %{$arg_ref};
 
-    $forecaster{$ident} = 
-        SOAP::Lite->service($SERVICE);
-    
-    map { $default_weather_parms{$ident}{$_} = 0 } @WEATHER_PARAMETERS; 
+        map { $default_weather_parms{$ident}{$_} = 0 } @WEATHER_PARAMETERS;
 
-    $self->set_latitude  ($args{'Latitude'}   || undef              );
-    $self->set_longitude ($args{'Longitude'}  || undef              );
-    $self->set_product   ($args{'Product'}    || $DEFAULT_PRODUCT   );
-    $self->set_start_time($args{'Start Time'} || $DEFAULT_START_TIME);
-    $self->set_end_time  ($args{'End Time'}   || undef              );
-    
-    if($args{'Weather Parameters'} and ref $args{'Weather Parameters'}) {
-        $self->set_weather_parameters(%{$args{'Weather Parameters'}});
+        $self->set_latitude( $args{'Latitude'}     || undef );
+        $self->set_longitude( $args{'Longitude'}   || undef );
+        $self->set_product( $args{'Product'}       || $DEFAULT_PRODUCT );
+        $self->set_start_time( $args{'Start Time'} || $DEFAULT_START_TIME );
+        $self->set_end_time( $args{'End Time'}     || undef );
+
+        if ( $args{'Weather Parameters'} and ref $args{'Weather Parameters'} ) {
+            $self->set_weather_parameters( %{ $args{'Weather Parameters'} } );
+        }
     }
-  }
 
 =pod
 
@@ -329,11 +326,11 @@ Sets the latitude for the object.  This is a decimal value.
 
 =cut
 
-  sub set_latitude {
-    my ($self, $new_latitude) = @_;
-    return $default_latitude{ident $self} = $new_latitude;
-  }
-  
+    sub set_latitude {
+        my ( $self, $new_latitude ) = @_;
+        return $default_latitude{ ident $self} = $new_latitude;
+    }
+
 =pod
 
 =head2 get_latitude
@@ -342,10 +339,10 @@ Returns the latitude stored in the object.
 
 =cut
 
-  sub get_latitude {
-    my ($self) = @_;
-    return $default_latitude{ident $self};
-  }
+    sub get_latitude {
+        my ($self) = @_;
+        return $default_latitude{ ident $self};
+    }
 
 =pod
 
@@ -355,11 +352,11 @@ Sets the longitude for the object.  This is a decimal value.
 
 =cut
 
-  sub set_longitude {
-    my ($self, $new_longitude) = @_;
-    return $default_longitude{ident $self} = $new_longitude;
-  }
-  
+    sub set_longitude {
+        my ( $self, $new_longitude ) = @_;
+        return $default_longitude{ ident $self} = $new_longitude;
+    }
+
 =pod
 
 =head2 get_longitude
@@ -368,10 +365,10 @@ Returns the longitude stored in the object.
 
 =cut
 
-  sub get_longitude {
-    my ($self) = @_;
-    return $default_longitude{ident $self};
-  }
+    sub get_longitude {
+        my ($self) = @_;
+        return $default_longitude{ ident $self};
+    }
 
 =pod
 
@@ -381,15 +378,15 @@ Sets the product for the object.  This is either 'Time-Series' or 'Glance'.
 
 =cut
 
-  sub set_product {
-    my ($self, $new_product) = @_;
+    sub set_product {
+        my ( $self, $new_product ) = @_;
 
-    die("Invalid product ($new_product)")
-      unless(grep {/^${new_product}$/} @PRODUCTS);
+        die("Invalid product ($new_product)")
+          unless ( grep { /^${new_product}$/ } @PRODUCTS );
 
-    return $default_product{ident $self} = $new_product;
-  }
-  
+        return $default_product{ ident $self} = $new_product;
+    }
+
 =pod
 
 =head2 get_product
@@ -398,10 +395,10 @@ Returns the product stored in the object.
 
 =cut
 
-  sub get_product {
-    my ($self) = @_;
-    return $default_product{ident $self};
-  }
+    sub get_product {
+        my ($self) = @_;
+        return $default_product{ ident $self};
+    }
 
 =pod
 
@@ -411,14 +408,14 @@ Sets the start time for the object.
 
 =cut
 
-  sub set_start_time {
-    my ($self, $new_start_time) = @_;
-    
-    return unless $new_start_time;
-    
-    return $default_start_time{ident $self} = ConvertDate($new_start_time);
-  }
-  
+    sub set_start_time {
+        my ( $self, $new_start_time ) = @_;
+
+        return unless $new_start_time;
+
+        return $default_start_time{ ident $self} = ConvertDate($new_start_time);
+    }
+
 =pod
 
 =head2 get_start_time
@@ -427,10 +424,10 @@ Gets the start time stored in the object.
 
 =cut
 
-  sub get_start_time {
-    my ($self) = @_;
-    return $default_start_time{ident $self};
-  }
+    sub get_start_time {
+        my ($self) = @_;
+        return $default_start_time{ ident $self};
+    }
 
 =pod
 
@@ -440,14 +437,14 @@ Sets the end time for the object.
 
 =cut
 
-  sub set_end_time {
-    my ($self, $new_end_time) = @_;
- 
-    return unless $new_end_time;
-    
-    return $default_end_time{ident $self} = ConvertDate($new_end_time);
-  }
-  
+    sub set_end_time {
+        my ( $self, $new_end_time ) = @_;
+
+        return unless $new_end_time;
+
+        return $default_end_time{ ident $self} = ConvertDate($new_end_time);
+    }
+
 =pod
 
 =head2 get_end_time
@@ -456,10 +453,10 @@ Gets the end time stored in the object.
 
 =cut
 
-  sub get_end_time {
-    my ($self) = @_;
-    return $default_end_time{ident $self};
-  }
+    sub get_end_time {
+        my ($self) = @_;
+        return $default_end_time{ ident $self};
+    }
 
 =pod
 
@@ -472,30 +469,30 @@ requested or not.
 
 =cut
 
-  sub set_weather_parameters {
-    my ($self, @params) = @_;
-    
-    return unless @params;
-    return unless $#params % 2;
-    
-    my %params = @params;
-    
-    while(my($parameter, $value) = each %params) {
-        die("Invalid weather parameter ($parameter)")
-            unless(grep {/^$parameter$/} @WEATHER_PARAMETERS);
+    sub set_weather_parameters {
+        my ( $self, @params ) = @_;
 
-        die("Invalid value ($value) for weather parameter ($parameter)")
-            unless($value =~ /^[01]$/);
+        return unless @params;
+        return unless $#params % 2;
+
+        my %params = @params;
+
+        while ( my ( $parameter, $value ) = each %params ) {
+            die("Invalid weather parameter ($parameter)")
+              unless ( grep { /^$parameter$/ } @WEATHER_PARAMETERS );
+
+            die("Invalid value ($value) for weather parameter ($parameter)")
+              unless ( $value =~ /^[01]$/ );
+        }
+
+        my $stored_params = $default_weather_parms{ ident $self};
+
+        while ( my ( $parameter, $value ) = each %params ) {
+            $stored_params->{$parameter} = $value;
+        }
+        return @params;
     }
 
-    my $stored_params = $default_weather_parms{ident $self};
-    
-    while(my($parameter, $value) = each %params) {
-        $stored_params->{$parameter} = $value;
-    }
-    return @params;
-  }
-  
 =pod
 
 =head2 get_weather_parameters
@@ -510,25 +507,25 @@ parameters will be returned.
 
 =cut
 
-  sub get_weather_parameters {
-    my ($self, @params) = @_;
+    sub get_weather_parameters {
+        my ( $self, @params ) = @_;
 
-    my $stored_params = $default_weather_parms{ident $self};
-    
-    return %{$stored_params} unless @params;
+        my $stored_params = $default_weather_parms{ ident $self};
 
-    my @results;
-    
-    for my $parameter (@params) {
-        die("Invalid weather parameter ($parameter)")
-            unless(grep {/^$parameter$/} @WEATHER_PARAMETERS);
-        
-        push @results, $parameter, $stored_params->{$parameter};
+        return %{$stored_params} unless @params;
+
+        my @results;
+
+        for my $parameter (@params) {
+            die("Invalid weather parameter ($parameter)")
+              unless ( grep { /^$parameter$/ } @WEATHER_PARAMETERS );
+
+            push @results, $parameter, $stored_params->{$parameter};
+        }
+
+        return @results;
     }
-        
-    return @results;
-  }
-  
+
 =pod
 
 =head2 get_available_products
@@ -537,11 +534,11 @@ Return a list of all products available through this service.
 
 =cut
 
-  sub get_available_products {
-    my ($self) = @_;
-    return @PRODUCTS;
-  }
-      
+    sub get_available_products {
+        my ($self) = @_;
+        return @PRODUCTS;
+    }
+
 =pod
 
 =head2 get_available_weather_parameters
@@ -551,11 +548,11 @@ service.
 
 =cut
 
-  sub get_available_weather_parameters {
-    my ($self) = @_;
-    return @WEATHER_PARAMETERS;
-  }
-      
+    sub get_available_weather_parameters {
+        my ($self) = @_;
+        return @WEATHER_PARAMETERS;
+    }
+
 =pod
 
 =head2 get_forecast_xml
@@ -568,69 +565,65 @@ arguments to this method.
 
 =cut
 
-  sub get_forecast_xml {
-    my ($self, %args) = @_;
+    sub get_forecast_xml {
+        my ( $self, %args ) = @_;
 
-    my ($ident) = ident $self;
+        my ($ident) = ident $self;
 
-    my ($latitude,
-        $longitude, 
-        $product, 
-        $start_time, 
-        $end_time, 
-        %weather_params
-    );
+        my (
+            $latitude,   $longitude, $product,
+            $start_time, $end_time,  %weather_params
+        );
 
-    die("Latitude required")
-      unless $latitude = $args{'Latitude'} || $default_latitude{$ident};
-      
-    die("Longitude required")
-      unless $longitude = $args{'Longitude'} || $default_longitude{$ident};
-      
-    die("Product required")
-      unless $product = $args{'Product'} || $default_product{$ident};
+        die("Latitude required")
+          unless $latitude = $args{'Latitude'} || $default_latitude{$ident};
 
-    die("Start time required")
-      unless $start_time = $args{'Start Time'} || $default_start_time{$ident};
-    
-    die("End time required")
-      unless $end_time = $args{'End Time'} || $default_end_time{$ident};
-    
-    %weather_params = %{$default_weather_parms{$ident}};
-    if(exists $args{'Weather Parameters'}) {
-        while(my($param, $value) = each %{$args{'Weather Parameters'}}) {
-            die("Invalid weather parameter ($param) found")
-              unless exists $weather_params{$param};
-            $weather_params{$param} = $value;
+        die("Longitude required")
+          unless $longitude = $args{'Longitude'} || $default_longitude{$ident};
+
+        die("Product required")
+          unless $product = $args{'Product'} || $default_product{$ident};
+
+        die("Start time required")
+          unless $start_time = $args{'Start Time'}
+              || $default_start_time{$ident};
+
+        die("End time required")
+          unless $end_time = $args{'End Time'} || $default_end_time{$ident};
+
+        %weather_params = %{ $default_weather_parms{$ident} };
+        if ( exists $args{'Weather Parameters'} ) {
+            while ( my ( $param, $value ) =
+                each %{ $args{'Weather Parameters'} } )
+            {
+                die("Invalid weather parameter ($param) found")
+                  unless exists $weather_params{$param};
+                $weather_params{$param} = $value;
+            }
         }
+
+        my $url =
+'http://www.weather.gov/forecasts/xml/sample_products/browser_interface/ndfdXMLclient.php?';
+
+        $url .= '&lat=' . $latitude;
+        $url .= '&lon=' . $longitude;
+        $url .= '&product=' . $NAME_TO_PRODUCT{$product};
+        $url .= '&begin=' . $start_time if $start_time;
+        $url .= '&end=' . $end_time if $end_time;
+
+        for my $param ( keys %weather_params ) {
+            if ( $weather_params{$param} ) {
+                $url .= '&'
+                  . $NAME_TO_WEATHER_PARAMETER{$param} . '='
+                  . $NAME_TO_WEATHER_PARAMETER{$param};
+            }
+        }
+
+        $forecast_xml{$ident} = get $url;
+
+        return $forecast_xml{$ident};
     }
 
-    my @weather_params;
-    while(my($param, $value) = each %weather_params) {
-        push @weather_params, 
-             SOAP::Data->type('boolean')
-                       ->name($NAME_TO_WEATHER_PARAMETER{$param})
-                       ->value($value);
-    }
-
-    my $resp = $forecaster{$ident}->NDFDgen(
-        SOAP::Data->name('latitude'          => $latitude), 
-        SOAP::Data->name('longitude'         => $longitude),
-        SOAP::Data->name('product'           => $NAME_TO_PRODUCT{$product}),
-        SOAP::Data->name('startTime'         => $start_time),
-        SOAP::Data->name('endTime'           => $end_time),
-        SOAP::Data->name('weatherParameters' => 
-            \SOAP::Data->value(@weather_params))
-    );
-
-    die("A fault (", $resp->faultcode, ") occurred: ", $resp->faultstring) 
-        if (ref $resp and $resp->fault);
-
-    $forecast_xml{$ident} = $resp; 
-
-    return $resp;
-  }
-  
 }
 
 =pod
@@ -686,4 +679,4 @@ under the same terms as Perl itself.
 
 =cut
 
-1; # End of Weather::NWS::NDFDgen
+1;    # End of Weather::NWS::NDFDgen
